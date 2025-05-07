@@ -1,0 +1,13 @@
+d2ba7a152d6d15c8d7ec5c64f37c30a5 *DESCRIPTION
+f3f5157ea6c1931469b548abb7692669 *NAMESPACE
+b7fc56590c3334371c370b56ab45bbc9 *R/numToRaw.R
+60b4db361929ecb3777436f0abdbc4ea *R/pack.R
+95a385af4f2dc1502e89d9531ec4dc60 *R/rawToNum.R
+166cd803ecbb70960854b402862bd3de *R/unpack.R
+52a15bf47a3c9b5555048aac856ef37a *inst/tinytest/test-package.R
+22dec0076c0caa6b14420cb63965a9b1 *man/numToRaw.Rd
+e9ca245572d4f141594b99025bec2a10 *man/pack-package.Rd
+ed9242511f7e06464f4935d39c00988e *man/pack.Rd
+56d44a7a6ee5c29147e9e6ef374c31e2 *man/rawToNum.Rd
+bf626e13dc523b6920b98df99e1b189c *man/unpack.Rd
+3945465cbe7d046a1c9284bde7c43476 *tests/tinytest.R

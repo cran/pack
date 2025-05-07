@@ -3,117 +3,97 @@
 # Distributed under GNU GPL version 3                                     #
 #-------------------------------------------------------------------------#
 
-'unpack' <-
-function(template, ...) {
+unpack <-
+function(template, ...)
+{
+    # http://perldoc.perl.org/functions/unpack.html
 
-  # http://perldoc.perl.org/functions/unpack.html
+    template <- unlist(strsplit(template,"\\s"))
+    values <- unlist(list(...))
 
-  template <- unlist(strsplit(template,"\\s"))
-  values <- unlist(list(...))
+    types <- gsub("[0-9]|\\*", "", template)
+    counts <- gsub("[[:alpha:]]|/", "", template)
+    counts <- gsub("\\*", "-1", counts)
+    suppressWarnings(counts <- as.numeric(counts))
+    result <- list()
 
-  types <- gsub('[0-9]|\\*','',template)
-  bytes <- gsub('[[:alpha:]]|/','',template)
-  bytes <- gsub('\\*','-1',bytes)
-  suppressWarnings(bytes <- as.numeric(bytes))
-  result <- NULL
-  
-  # Loop over template / value pairs
-  for( i in 1:length(template) ) {
-    
-    type <- types[i]
-    byte <- bytes[i]
+    # Loop over template / value pairs
+    for (i in seq_along(template)) {
 
-    # A null byte
-    if( type == 'x' ) {
-      values <- values[-1]
-      next
+        type <- types[i]
+        count <- counts[i]
+
+        # A null byte
+        if (type == "x") {
+            values <- values[-1]
+            next
+        }
+
+        # Process remaining values
+        if (length(values) > 0) {
+            # Check count
+            if (is.na(count)) {
+                count <- 1               # Letter without count
+            } else if (count == -1) {
+                count <- length(values)  # Letter with a '*'
+            } else if (count > length(values)) {
+                stop("template element ", type, count,
+                     " is longer than the number of values left to unpack")
+            }
+            # Process values
+            if (regexpr("/", type, fixed = TRUE) > 0) {
+                # Packed item count followed by packed items
+                seq <- strsplit(type, "/")[[1]]
+                num <- unpack(paste0(seq[1], " H*"), values)
+                val <- unpack(paste0(seq[2], num[[1]], " H*"), num[[2]])
+                values <- val[[2]]
+                val <- unlist(val[[1]])
+            } else {
+                # number of 'values' vector elements to unpack
+                n <-
+                    switch(type,
+                           H = count,
+                           a = count,
+                           A = count,
+                           b = 1,
+                           B = 1,
+                           C = 1,
+                           v = 2,
+                           V = 4,
+                           d = 8,
+                           f = 4,
+                           stop(sQuote(type), " is an unsupported template value"))
+
+
+                # unpacked value
+                uv <- values[seq_len(n)]
+                val <-
+                    switch(type,
+                           H = uv,                              # Hex string - high nibble first
+                           a = ,
+                           A = {
+                               tmp <- uv
+                               tmp <- rawToChar(uv[as.logical(uv)])  # remove embedded nulls (a)
+                               sub(" +$", "", tmp)                   # remove trailing spaces (A)
+                           },
+                           b = rawToBits(uv),                   # bit string, low-to-high order
+                           B = rev(rawToBits(uv)),              # bit string, high-to-low order
+                           C = as.integer(uv),                  # unsigned char (octet) value
+                           v = rawToNum(uv, 2),                 # unsigned short (16-bit), little-endian
+                           V = rawToNum(uv, 4),                 # unsigned long  (32-bit), little-endian
+                           d = readBin(uv, "numeric", 1L, 8L),  # double-precision float (native format)
+                           f = readBin(uv, "numeric", 1L, 4L),  # single-precision float (native format)
+                           stop(sQuote(type), " is an unsupported template value"))
+
+                # remove unpacked values
+                values <- values[-seq_len(n)]
+            }
+        } else {
+            val <- NULL  # no remaining values
+        }
+
+        # Combine result
+        result <- c(result, list(val))
     }
-
-    # Check template and values length
-    if( length(values) == 0 ) {
-      val <- NULL
-      #stop('template values too long for binary data')
-    } else
-    # (decimal 240 would be hex F0.)
-    if( type == 'H' ) {
-      # In the case of 'H*'
-      if( byte == -1 )
-        byte <- length(values)
-      if( byte > length(values) )
-        stop('template too long for values')
-      val <- values[1:byte]
-      values <- values[-(1:byte)]
-    } else
-    # A null padded string
-    if( type == 'a' ) {
-      if( byte > length(values) )
-        stop('template too long for values')
-      val <- values[1:byte]
-      # strings can no longer have embedded nuls as of R-2.8.0
-      val <- rawToChar( val[as.logical(val)] )
-      values <- values[-(1:byte)]
-    } else
-    # A space padded ASCII string
-    if( type == 'A' ) {
-      if( byte > length(values) )
-        stop('template too long for values')
-      val <- values[1:byte]
-      # strings can no longer have embedded nuls as of R-2.8.0
-      val <- rawToChar( val[as.logical(val)] )
-      values <- values[-(1:byte)]
-    } else
-    # Bit string, low-to-high order
-    if( type == 'b' ) {
-      val <- rawToBits( values[1] )
-      values <- values[-1]
-    } else
-    # Bit string, high-to-low order
-    if( type == 'B' ) {
-      val <- rev( rawToBits( values[1] ) )
-      values <- values[-1]
-    } else
-    # Hex string - high nibble first
-    # An unsigned char (octet) value.
-    if( type == 'C' ) {
-      val <- as.integer( values[1] )
-      values <- values[-1]
-    } else
-    # An unsigned short (16-bit) in "VAX" (little-endian) order.
-    if( type == 'v' ) {
-      val <- rawToNum( values[1:2], 2 )
-      values <- values[-(1:2)]
-    } else
-    # An unsigned long (32-bit) in "VAX" (little-endian) order.
-    if( type == 'V' ) {
-      val <- rawToNum( values[1:4], 4 )
-      values <- values[-(1:4)]
-    } else
-    # A double-precision float in the native format.
-    if( type == 'd' ) {
-      bits <- as.integer(rawToBits(values[1:8]))
-      val <- (-1)^bits[64] * 2^(sum( 2^(10:0) * bits[63:53] )-1023) * (1 + sum( 2^-(1:52) * bits[52:1] ))
-      values <- values[-(1:8)]
-    } else
-    # A single-precision float in the native format.
-    if( type == 'f' ) {
-      bits <- as.integer(rawToBits(values[1:4]))
-      val <- (-1)^bits[32] * 2^(sum( 2^( 7:0) * bits[31:24] )- 127) * (1 + sum( 2^-(1:23) * bits[1:23] ))
-      values <- values[-(1:4)]
-    } else
-    # Packed item count followed by packed items
-    if( regexpr('/',type)>0 ) {
-      seq <- unlist(strsplit(type,'/'))
-      num <- unpack(paste(seq[1],'H*'), values)
-      val <- unpack(paste(seq[2],num[[1]],' H*',sep=''),num[[2]])
-      values <- val[[2]]
-      val <- unlist(val[[1]])
-    } else
-    if( type != 'x' ) {
-      stop('\'',type,'\' is an unsupported template value')
-    }
-
-    # Combine result
-    result <- c(result,list(val))
-  }
-  return(result)
+    return(result)
 }

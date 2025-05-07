@@ -17,12 +17,12 @@
   'A' - A space padded string\cr
   'b' - An ascending bit order binary vector, (must be a multiple of 8 long)\cr
   'B' - An descending bit order binary vector, (must be a multiple of 8 long)\cr
-  'C' - An unsigned char (octet) value\cr
+  'C' - An unsigned char (8-bit byte/octet) value\cr
   'v' - An unsigned short (16-bit) in "VAX" (little-endian) order\cr
   'V' - An unsigned long (32-bit) in "VAX" (little-endian) order\cr
   'f' - A single-precision float\cr
   'd' - A double-precision float\cr
-  'x' - A null byte\cr
+  'x' - Skip next byte, and push nothing onto return value for it\cr
   'H' - A raw byte\cr\cr
   Values 'a', 'A', and 'H' may be followed by a repeat value.  A repeat value
   of '*' will cause the remainder of the bytes in \code{values} to be placed
@@ -38,9 +38,9 @@
   A list with an element for each value in \code{template}.
 }
 \references{
-  \url{http://perldoc.perl.org/functions/unpack.html}
+  \url{https://perldoc.perl.org/functions/unpack}
 }
-\author{ Josh Ulrich }
+\author{ Joshua M. Ulrich }
 \note{
   When unpacking, 'A' strips trailing whitespace and nulls and 'a' returns data verbatim
   (but with embedded nulls removed, since strings cannot contain embedded nulls as of R-2.8.0).

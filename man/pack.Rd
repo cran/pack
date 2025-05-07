@@ -17,7 +17,7 @@
   'A' - A space padded string\cr
   'b' - An ascending bit order binary vector, (must be a multiple of 8 long)\cr
   'B' - An descending bit order binary vector, (must be a multiple of 8 long)\cr
-  'C' - An unsigned char (octet) value\cr
+  'C' - An unsigned char (8-bit byte/octet) value\cr
   'v' - An unsigned short (16-bit) in "VAX" (little-endian) order\cr
   'V' - An unsigned long (32-bit) in "VAX" (little-endian) order\cr
   'x' - A null byte\cr\cr
@@ -34,12 +34,9 @@
   A raw vector following the elements in \code{template}.
 }
 \references{
-  \url{http://perldoc.perl.org/functions/pack.html}
+  \url{https://perldoc.perl.org/functions/pack}
 }
-\author{ Josh Ulrich }
-%\note{ ~~further notes~~ 
-% ~Make other sections like Warning with \section{Warning }{....} ~
-%}
+\author{ Joshua M. Ulrich }
 \seealso{ \code{\link{unpack}} }
 \examples{
   (x <- pack('A4 C v A8 V', 'pack', 2, 8, 'sequence', 68098))
